@@ -1,0 +1,315 @@
+
+<style>
+:root { --main-color: #0ff; }
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #000;
+  color: rgba(0, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+#bgCanvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+}
+
+.dashboard { display: flex; height: 100vh; }
+
+.sidebar {
+  width: 250px;
+  background: rgba(0,0,0,0.8);
+  border-right: 1px solid rgba(0,255,255,0.5);
+  box-shadow: 0 0 10px rgba(0,255,255,0.3);
+  padding: 20px;
+  overflow-y: auto;
+}
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 0 5px rgba(0,255,255,0.6);
+}
+.sidebar ul { list-style: none; padding: 0; }
+.sidebar li { margin: 10px 0; }
+.sidebar button {
+  width: 100%;
+  background: rgba(0,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.5);
+  color: rgba(0,255,255,0.7);
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  text-align: left;
+}
+.sidebar button:hover {
+  background: rgba(0,255,255,0.15);
+  box-shadow: 0 0 5px rgba(0,255,255,0.4);
+}
+
+.submenu { display: none; margin-left: 15px; }
+.submenu button { font-size: 14px; }
+
+.content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+.content h1 {
+  font-size: 28px;
+  text-shadow: 0 0 8px rgba(0,255,255,0.6);
+}
+.api-data { margin-top: 20px; }
+.api-card {
+  background: rgba(0,255,255,0.08);
+  border: 1px solid rgba(0,255,255,0.5);
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,255,255,0.3);
+}
+
+#settingsBtn {
+  position: fixed; top: 20px; right: 20px;
+  z-index: 10;
+  padding: 10px 15px;
+  border: none; border-radius: 8px;
+  background: rgba(0,255,255,0.7);
+  color: black;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0,255,255,0.4);
+}
+
+#settingsPanel {
+  position: fixed;
+  top: 60px; right: 20px;
+  width: 250px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(0,255,255,0.5);
+  padding: 15px;
+  border-radius: 10px;
+  display: none;
+  box-shadow: 0 0 5px rgba(0,255,255,0.4);
+  z-index: 10;
+  color: rgba(0,255,255,0.7);
+}
+#settingsPanel h3 { margin-top:0; margin-bottom:10px; text-align:center; }
+#settingsPanel select, #settingsPanel button { width:100%; margin-bottom:10px; padding:5px; border-radius:6px; border:none; cursor:pointer; }
+#settingsPanel button { background: rgba(0,255,255,0.7); color:black; }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div class="dashboard">
+  <div class="sidebar">
+    <h2>⚡ Futuro</h2>
+    <ul>
+      <li>
+        <button onclick="toggleMenu('menu1')">📊 Relatórios</button>
+        <div id="menu1" class="submenu">
+          <button onclick="playSound(); carregarCripto()">Criptomoedas</button>
+          <button onclick="playSound(); carregarClima()">Clima Atual</button>
+        </div>
+      </li>
+      <li>
+        <button onclick="toggleMenu('menu2')">⚙️ Configurações</button>
+        <div id="menu2" class="submenu">
+          <button onclick="playSound()">Usuários</button>
+          <button onclick="playSound()">Sistema</button>
+          <button onclick="playSound()">Segurança</button>
+        </div>
+      </li>
+      <li>
+        <button onclick="toggleMenu('menu3')">🌐 Redes</button>
+        <div id="menu3" class="submenu">
+          <button onclick="playSound()">Firewall</button>
+          <button onclick="playSound()">VPN</button>
+          <button onclick="playSound()">Logs</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h1>Bem-vindo ao Dashboard Futurista</h1>
+    <p>Escolha uma opção no menu para explorar.</p>
+    <div id="apiContainer" class="api-data"></div>
+  </div>
+</div>
+
+<!-- Botão e Painel Configurações -->
+<button id="settingsBtn">⚙️ Configurações</button>
+<div id="settingsPanel">
+  <h3>Configurações</h3>
+  <label>Tema de cor:</label>
+  <select id="themeSelect">
+    <option value="#0ff">Neon Azul</option>
+    <option value="#f0f">Neon Roxo</option>
+    <option value="#ff0">Neon Amarelo</option>
+    <option value="#f00">Neon Vermelho</option>
+  </select>
+
+  <label>Som:</label>
+  <select id="soundSelect">
+    <option value="https://www.soundjay.com/button/beep-07.mp3">Beep</option>
+    <option value="https://www.soundjay.com/button/button-3.mp3">Click 2</option>
+    <option value="https://www.soundjay.com/button/button-09.mp3">Click 3</option>
+  </select>
+
+  <button id="updateApis">🔄 Atualizar APIs</button>
+</div>
+
+<script>
+/* Menu */
+function toggleMenu(id) {
+  let menu = document.getElementById(id);
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+  playSound();
+}
+
+/* Som futurista */
+function playSound() {
+  const audio = new Audio(document.getElementById("soundSelect").value);
+  audio.play().catch(err => console.log("Erro ao tocar áudio:", err));
+}
+
+/* Configurações painel */
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  const panel = document.getElementById("settingsPanel");
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+});
+document.getElementById("themeSelect").addEventListener("change", (e) => {
+  const color = e.target.value;
+  document.documentElement.style.setProperty("--main-color", color);
+  document.querySelectorAll(".api-card").forEach(card=>{
+    card.style.borderColor=color;
+    card.style.boxShadow=`0 0 5px ${color}`;
+    card.style.background=`${color}15`;
+  });
+  document.querySelectorAll(".sidebar button").forEach(btn=>{
+    btn.style.borderColor=color;
+    btn.style.boxShadow=`0 0 5px ${color}`;
+  });
+});
+document.getElementById("updateApis").addEventListener("click", ()=>{
+  if(document.getElementById("menu1").style.display==="block"){
+    carregarCripto();
+    carregarClima();
+  }
+});
+
+/* API Cripto - CoinGecko */
+async function carregarCripto(){
+  const container = document.getElementById("apiContainer");
+  container.innerHTML="<p>🔄 Carregando preços de criptomoedas...</p>";
+  try{
+    const res=await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,dogecoin,cardano,solana");
+    const data=await res.json();
+    container.innerHTML="";
+    data.forEach(coin=>{
+      let card=document.createElement("div");
+      card.className="api-card";
+      card.innerHTML=`
+        <h3>💰 ${coin.name} (${coin.symbol.toUpperCase()})</h3>
+        <p>Preço: $${coin.current_price}</p>
+        <p>Variação 24h: ${coin.price_change_percentage_24h.toFixed(2)}%</p>
+        <p>Valor de mercado: $${coin.market_cap.toLocaleString()}</p>
+      `;
+      container.appendChild(card);
+    });
+  }catch(err){
+    container.innerHTML="<p style='color:red'>❌ Erro ao carregar API de Criptomoedas</p>";
+  }
+}
+
+/* API Clima - Open-Meteo + Nominatim */
+async function carregarClima(){
+  const container=document.getElementById("apiContainer");
+  container.innerHTML="<p>🔄 Detectando localização...</p>";
+  if(!navigator.geolocation){
+    container.innerHTML="<p style='color:red'>❌ Seu navegador não suporta geolocalização.</p>";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async(pos)=>{
+    const lat=pos.coords.latitude;
+    const lon=pos.coords.longitude;
+    container.innerHTML="<p>🔄 Carregando clima do seu local...</p>";
+    try{
+      const climaRes=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
+      const climaData=await climaRes.json();
+      const clima=climaData.current_weather;
+      const geoRes=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+      const geoData=await geoRes.json();
+      const cidade=geoData.address.city||geoData.address.town||geoData.address.village||"Local desconhecido";
+      const pais=geoData.address.country||"";
+
+      container.innerHTML="";
+      let card=document.createElement("div");
+      card.className="api-card";
+      card.innerHTML=`
+        <h3>🌍 Clima em ${cidade}, ${pais}</h3>
+        <p>Temperatura: ${clima.temperature} °C</p>
+        <p>Vento: ${clima.windspeed} km/h</p>
+        <p>Direção do vento: ${clima.winddirection}°</p>
+        <p>Última atualização: ${clima.time}</p>
+      `;
+      container.appendChild(card);
+    }catch(err){
+      container.innerHTML="<p style='color:red'>❌ Erro ao carregar clima/localização.</p>";
+    }
+  }, (err)=>{
+    container.innerHTML="<p style='color:red'>⚠️ Não foi possível acessar sua localização. Permita no navegador.</p>";
+  });
+}
+
+/* Fundo animado - teia de pontos */
+const canvas=document.getElementById("bgCanvas");
+const ctx=canvas.getContext("2d");
+let width,height,particles=[];
+function resizeCanvas(){width=canvas.width=window.innerWidth;height=canvas.height=window.innerHeight;}
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+
+class Particle{
+  constructor(){
+    this.x=Math.random()*width;
+    this.y=Math.random()*height;
+    this.vx=(Math.random()-0.5)*0.7;
+    this.vy=(Math.random()-0.5)*0.7;
+    this.radius=2;
+  }
+  update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>width)this.vx*=-1;if(this.y<0||this.y>height)this.vy*=-1;}
+  draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--main-color');ctx.fill();}
+}
+function initParticles(num){particles=[];for(let i=0;i<num;i++)particles.push(new Particle());}
+initParticles(120);
+
+function animate(){
+  ctx.clearRect(0,0,width,height);
+  particles.forEach(p=>{p.update();p.draw();});
+  connectParticles();
+  requestAnimationFrame(animate);
+}
+function connectParticles(){
+  for(let a=0;a<particles.length;a++){
+    for(let b=a+1;b<particles.length;b++){
+      let dx=particles[a].x-particles[b].x;
+      let dy=particles[a].y-particles[b].y;
+      let dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<120){
+        ctx.beginPath();
+        ctx.strokeStyle=`rgba(0,255,255,${1-dist/120})`;
+        ctx.lineWidth=1;
+        ctx.moveTo(particles[a].x,particles[a].y);
+        ctx.lineTo(particles[b].x,particles[b].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+animate();
+</script>
